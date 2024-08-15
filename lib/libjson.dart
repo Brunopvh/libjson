@@ -87,10 +87,11 @@ class JsonToMap {
 }
 
 //========================================================================//
-// Dados Camara
+// Dados Proposições
 //========================================================================//
 class CamaraProposicoes {
-  
+
+  List<Map<String, dynamic>> _listMap = []; 
   File fileLocalJson;
 
   CamaraProposicoes(this.fileLocalJson);
@@ -99,29 +100,69 @@ class CamaraProposicoes {
     return JsonToMap().fromFileName(this.fileLocalJson.path)['dados'];
   }
 
+  List<Map<String, dynamic>> getListMap(){
+
+    if(this._listMap.isEmpty){
+      Map<String, dynamic> _current;
+      List<dynamic> get_list = this.getList();
+      int max = get_list.length;
+
+      for(int i=0; i<max; i++){
+        _current = get_list[i];
+        this._listMap.add(_current);
+      }
+    }
+    return this._listMap;
+  }
+
+  List<String> getKeys(){
+    return this.getListMap()[0].keys.toList();
+  }
+
+  List<String> valuesInKey(String keyName){
+    // Apartir de uma chave/key - retorna todos os valores correspondentes no arquivo JSON.
+
+    List<String> _values = [];
+    String _current;
+    int max = this.getListMap().length;
+
+    for(int i=0; i<max; i++){
+      _current = this.getListMap()[i][keyName].toString();
+      _values.add(_current);
+    }
+
+    return _values;
+  }
 
 }
 
 void run() async {
-
-  String url = 'https://dadosabertos.camara.leg.br/arquivos/proposicoes/json/proposicoes-2024.json';
-  
-  String filename = 'proposicoes';
+  printLine();
+  String url = BaseUrls().urlProposicoes();
+  String filename = 'proposicoes.json';
   String outputFile = PathUtils().join([getUserDownloads(), 'TESTE', filename]);
   File filePath = File(outputFile);
 
   if(!filePath.existsSync()){
     createDir(filePath.parent.path);
     downloadFileSync(url, outputFile);
-  }
-  
+  }  
+
   CamaraProposicoes proposicoes = CamaraProposicoes(filePath);
+  //List<Map<String, dynamic>> mp = proposicoes.getListMap();
 
-  print(proposicoes.getList());
   
-
+  print(proposicoes.getKeys());
+  printLine();
+  List<String> ementas = proposicoes.valuesInKey('ementa');
+  int max = ementas.length;
+  for(int i=0; i<max; i++){
+    print(ementas[i]);
+    printLine();
+  }
 
   print('OK');
+  printLine();
   return;
   
 }
