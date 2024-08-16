@@ -103,12 +103,18 @@ Future<bool> downloadFile(String url, String filename) async {
 }
 
 void downloadFileSync(String url, String filename) {
+
+  File file = File(filename);
+  if(file.existsSync()){
+    printInfo('Arquivo encontrado -> ${file.path}');
+    return;
+  }
+
   printInfo('Baixando: ${url}');
   http.Client client = new http.Client();
   var req = client.get(Uri.parse(url));
 
   Response r;
-  File file = new File(filename);
   req.then((value) {
     printInfo('Salvando: $filename');
     r = value;
