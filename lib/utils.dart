@@ -10,6 +10,7 @@ REFERÊNCIAS
 
 */
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
@@ -74,18 +75,16 @@ String joinPath(String path1, String path2) {
 }
 
 class PathUtils {
-  
-  String join(List<String> dirs){
+  String join(List<String> dirs) {
     int max = dirs.length;
     String first = dirs[0];
 
-    for(int i=1; i<max; i++){
+    for (int i = 1; i < max; i++) {
       first = '${first}${Platform.pathSeparator}${dirs[i]}';
     }
 
     return first;
   }
-
 }
 
 //========================================================================//
@@ -102,10 +101,9 @@ Future<bool> downloadFile(String url, String filename) async {
   return true;
 }
 
-void downloadFileSync(String url, String filename) {
-
+void __downloadFileSync(String url, String filename) {
   File file = File(filename);
-  if(file.existsSync()){
+  if (file.existsSync()) {
     printInfo('Arquivo encontrado -> ${file.path}');
     return;
   }
@@ -122,6 +120,20 @@ void downloadFileSync(String url, String filename) {
   });
 }
 
+void downloadFileSync(String url, String filename) {
+  // https://stackoverflow.com/questions/18033151/using-dart-to-download-a-file
+  File f = new File(filename);
+  if (f.existsSync()) {
+    printInfo('O arquivo já existe: ${filename}');
+    return;
+  }
+  printInfo('Baixando: ${url}');
+
+  http.get(Uri.parse(url)).then((value) => {
+        printInfo('Salvando arquivo: ${filename}'),
+        f.writeAsBytesSync(value.bodyBytes),
+      });
+}
 
 //========================================================================//
 // Request de um URL qualquer.
@@ -134,7 +146,6 @@ Future<Response> getRequest(String url) async {
   var r = response as http.Response;
   return r;
 }
-
 
 //========================================================================//
 // Descompactar arquivo .ZIP
@@ -157,5 +168,38 @@ void unzipFile(String filezip, String outputdir) {
     //await outputFile.writeAsBytes(data);
     outputFile.writeAsBytesSync(data);
     print('Extraindo: $filename');
+  }
+}
+
+//========================================================================//
+// JSON UTILS LOCAL
+//========================================================================//
+class JsonUtils {
+  JsonUtils();
+
+  String getJson({required Map<String, dynamic> map}) {
+    //return jsonEncode(map);
+    return JsonEncoder.withIndent("  ").convert(map);
+  }
+
+  Map<String, dynamic> getMap({required String dataJson}) {
+    return jsonDecode(dataJson);
+  }
+
+  bool exportMapToFile(
+      {required Map<String, dynamic> map,
+      required File outputFile,
+      bool replace = false}) {
+    // Converte um mapa em Json e salva em um arquivo no disco.
+    if (replace == false) {
+      if (outputFile.existsSync()) {
+        printErro('O arquivo já existe: ${outputFile.path}');
+        return false;
+      }
+    }
+
+    printInfo('Exportando arquivo: ${outputFile.path}');
+    outputFile.writeAsStringSync(this.getJson(map: map));
+    return true;
   }
 }
