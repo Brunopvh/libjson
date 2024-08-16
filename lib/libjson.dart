@@ -136,6 +136,33 @@ class CamaraProposicoes {
 
 }
 
+//========================================================================//
+// Buscar Itens em uma lista de mapas
+//========================================================================//
+class FindItens {
+  late List<Map<String, dynamic>> listItens;
+
+  FindItens({required this.listItens});
+
+  bool containsValue({required String key, required String value}){
+    if(!this.listItens[0].containsKey(key)){
+      return false;
+    }
+
+    bool _contains = false;
+    int max = this.listItens.length;
+    for(int i=0; i<max; i++){
+      if(this.listItens[i][key].toString().contains(value)){
+        _contains = true;
+        break;
+      }
+    }
+    return _contains;
+  }
+
+
+}
+
 void run() async {
   printLine();
   String url = BaseUrls().urlProposicoes();
@@ -151,15 +178,9 @@ void run() async {
   CamaraProposicoes proposicoes = CamaraProposicoes(filePath);
   //List<Map<String, dynamic>> mp = proposicoes.getListMap();
 
-  
-  print(proposicoes.getKeys());
-  printLine();
-  List<String> ementas = proposicoes.valuesInKey('ementa');
-  int max = ementas.length;
-  for(int i=0; i<max; i++){
-    print(ementas[i]);
-    printLine();
-  }
+  FindItens f = FindItens(listItens: proposicoes.getListMap());
+
+  print(f.containsValue(key: 'ementa', value: 'Estabelece normas gerais'));
 
   print('OK');
   printLine();
