@@ -203,3 +203,26 @@ class JsonUtils {
     return true;
   }
 }
+
+//========================================================================//
+// SALVAR STRINGS EM ARQUIVOS
+//========================================================================//
+bool exportFile(
+    {required File file,
+    required List<String> textList,
+    bool replace = false}) {
+  if (replace == false) {
+    if (file.existsSync()) {
+      printInfo('Arquivo já existe: ${file.path}');
+      return false;
+    }
+  }
+
+  int max_num = textList.length;
+  printInfo('Exportando arquivo: ${file.path}');
+  for (int i = 0; i < max_num; i++) {
+    file.writeAsStringSync("${textList[i]}\n", mode: FileMode.append);
+  }
+
+  return true;
+}

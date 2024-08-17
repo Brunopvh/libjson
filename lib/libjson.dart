@@ -224,17 +224,23 @@ class FindItens {
   FindItens getMapsInKey({required String key, required String value}) {
     // Retorna um objeto FindItens com todos os mapas que contém o valor <value>
     // na chave <key>.
-    List<Map<String, dynamic>> list_itens = [];
-    String _current_str;
-    int max = this.listItens.length;
-    for (int i = 0; i < max; i++) {
-      _current_str = this.listItens[i][key].toString();
-      if (_current_str.contains(value)) {
-        list_itens.add(this.listItens[i]);
-      }
+    List<Map<String, dynamic>> list_maps_from_key = [];
+    if (this.listItens.isEmpty) {
+      return FindItens(listItens: []);
     }
 
-    return FindItens(listItens: list_itens);
+    if (!this.listItens[0].keys.toList().contains(key)) {
+      return FindItens(listItens: []);
+    }
+
+    int max_num = this.listItens.length;
+    for (int i = 0; i < max_num; i++) {
+      if (this.listItens[i][key].toString().toUpperCase() ==
+          value.toUpperCase()) {
+        list_maps_from_key.add(this.listItens[i]);
+      }
+    }
+    return FindItens(listItens: list_maps_from_key);
   }
 
   FindItens getMapsFromValues({required List<String> values, required key}) {
@@ -258,6 +264,10 @@ class FindItens {
   }
 }
 
+class FindElements extends FindItens {
+  FindElements({required super.listItens});
+}
+
 void run() async {
   printLine();
 
@@ -278,27 +288,33 @@ void run() async {
 
   if (!arquivoAutores.existsSync()) {
     printErro('O arquivo não existe -> ${arquivoAutores.path}');
+    return;
   }
 
   if (!arquivoProposicoes.existsSync()) {
     printErro('O arquivo não existe -> ${arquivoProposicoes.path}');
+    return;
   }
 
   // Usar os dados
   FindItens autores = ProposicoesAutores(arquivoAutores).getFind();
   FindItens proposicoes = Proposicoes(arquivoProposicoes).getFind();
-  FindItens AutCris =
-      autores.getMapsInKey(key: 'nomeAutor', value: 'Cristiane');
+  FindElements ro = FindElements(
+      listItens:
+          autores.getMapsInKey(key: 'siglaUFAutor', value: 'RO').listItens);
 
-  FindItens PCris = proposicoes.getMapsFromValues(
-      key: 'id', values: AutCris.getValuesInKey(key: 'idProposicao'));
+  File outputFile = File(path_utils.join([dirTeste.path, 'deputados-ro.json']));
+  File arquivoNomes = File(path_utils.join([dirTeste.path, 'nomes.txt']));
+  List<String> nomes = ro.getValuesInKey(key: 'nomeAutor');
+  List<String> exportNomes = [];
+  int max = nomes.length;
+  for (int i = 0; i < max; i++) {
+    if (!exportNomes.contains(nomes[i])) {
+      exportNomes.add(nomes[i]);
+    }
+  }
 
-  File cristiane_file =
-      File(path_utils.join([dirTeste.path, 'cristiane.json']));
-
-  Map<String, dynamic> m = {'data': PCris.listItens};
-  JsonUtils()
-      .exportMapToFile(map: m, outputFile: cristiane_file, replace: true);
+  exportFile(file: arquivoNomes, textList: exportNomes, replace: true);
 
   print('OK');
   return;
