@@ -90,7 +90,8 @@ class GetJson {
     //e retorna o conteúdo em forma de mapa.
     Map<String, dynamic> m = {};
     File f = File(filename);
-    if (f.existsSync() == false) {
+
+    if (!f.existsSync()) {
       printLine();
       printErro('o arquivo não existe ${filename}');
     } else {
@@ -175,6 +176,22 @@ class DadosEmenta {
     return ids;
   }
 
+  List<Ementa> getEmentas({required List<String> ids}){
+    List<Ementa> ementas = [];
+    int max = ids.length;
+    int count = this.ementas.length;
+
+    for(int i=0; i<max; i++){
+      for(int c=0; i<count; c++){
+        if(ids[i].toString() == this.ementas[c].getId()){
+          ementas.add(this.ementas[c]);
+        }
+      }
+    }
+
+    return ementas;
+  }
+
 }
 
 //========================================================================//
@@ -217,7 +234,6 @@ class DadosAutor {
     if(a.isEmpty){
       printErro('O nome do autor informado não existe');
       printLine();
-      exit(1);
     }
 
     return a;
@@ -235,13 +251,16 @@ class DadosAutor {
 
 }
 
-void run(){
-  downloadBaseOnline();
+void run() async {
+  
+  await downloadBaseOnline();
 
-  DadosCamara a = DadosCamara(dadosCamara: GetJson().fromFileName(baseAutores.path));
-  DadosAutor dadosAutor = DadosAutor(dados: a);
+  DadosCamara ementas = DadosCamara(dadosCamara: GetJson().fromFileName(baseEmentas()));
+  DadosCamara autores = DadosCamara(dadosCamara: GetJson().fromFileName(baseAutores()));
 
-  List<Autor> c = dadosAutor.autorDados(nome: 'Cristiane Lopes');
-  print(dadosAutor.autorProposicoesIds(nome: 'Cristiane Lopes'));
+  List<String> cristianeEmentasIds = DadosAutor(dados: autores).autorProposicoesIds(nome: 'Cristiane Lopes');
+  List<Ementa> cristianeEmentas = DadosEmenta(dados: ementas).getEmentas(ids: cristianeEmentasIds);
+
+  print(cristianeEmentasIds);
 
 }

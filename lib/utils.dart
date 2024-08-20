@@ -124,6 +124,21 @@ void downloadFileSync(String url, String filename) {
       });
 }
 
+void download({required String url, required File filePath}) async {
+
+  if (filePath.existsSync()) {
+    printInfo('O arquivo já existe: ${filePath.path}');
+    return;
+  }
+
+  printInfo('Baixando: ${url}');
+  Future<Response> response = http.get(Uri.parse(url)); 
+  Response resp = await response;   
+  printInfo('Salvando arquivo: ${filePath.path}');
+  filePath.writeAsBytesSync(resp.bodyBytes);
+
+}
+
 //========================================================================//
 // Request de um URL qualquer.
 //========================================================================//

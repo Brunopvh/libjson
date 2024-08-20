@@ -4,17 +4,35 @@ import 'package:libjson/libjson.dart';
 import 'package:libjson/utils.dart';
 
 Directory cacheDir = Directory(PathUtils().join([getUserDownloads(), 'dados-camara']));
-File baseEmentas = File(PathUtils().join([cacheDir.path, 'ementas.json']));
-File baseAutores = File(PathUtils().join([cacheDir.path, 'autores.json']));
 
-void downloadBaseOnline(){
-  if(!baseAutores.existsSync()){
-    downloadFileSync(UrlsCamara().autores(), baseAutores.path);
+String baseEmentas(){
+  return PathUtils().join([cacheDir.path, 'ementas.json']);
+}
+
+String baseAutores(){
+  return PathUtils().join([cacheDir.path, 'autores.json']);
+}
+
+Future<bool> downloadBaseOnline() async {
+
+  if(!cacheDir.existsSync()){
+    cacheDir.createSync(recursive: true);
   }
 
-  if(!baseEmentas.existsSync()){
-    downloadFileSync(UrlsCamara().ementas(), baseEmentas.path);
+
+  if(!File(baseAutores()).existsSync()){
+    download(url: UrlsCamara().autores(), filePath:  File(baseAutores()));
   }
+
+  if(!File(baseEmentas()).existsSync()){
+    download(url: UrlsCamara().ementas(), filePath:  File(baseEmentas()));
+  }
+
+  if(File(baseEmentas()).existsSync() && File(baseAutores()).existsSync()){
+    return true;
+  }
+
+  return false;
 }
 
 class Ementa {
@@ -59,11 +77,7 @@ class Autor {
   */
 
   Map<String, dynamic> autorItens;
-  Autor({required this.autorItens}){
-    if(this.autorItens.length != 12){
-      print('ERRO: um autor contém 12 itens - autor contém ${this.autorItens.length}');
-    }
-  }
+  Autor({required this.autorItens});
 
   String getNome(){
     return this.autorItens['nomeAutor'].toString();
