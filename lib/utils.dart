@@ -10,6 +10,11 @@ REFERÊNCIAS
 
 */
 
+/*
+Autor - Bruno Chaves
+2024-08
+*/
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart';
@@ -37,6 +42,17 @@ void printMsg(String text) {
 //========================================================================//
 // Retorna o caminho absoluto da pasta HOME do usuário.
 //========================================================================//
+
+String getAndroidHomeDir() {
+  
+  Directory androidHomeDir = Directory('/storage/emulated/0');
+  Directory androidHome = androidHomeDir as Directory;
+  if (!androidHome.existsSync()) {
+    androidHome.createSync(recursive: true);
+  }
+  return androidHome.path;
+}
+
 String getUserHome() {
   var h;
   if (Platform.isMacOS) {
@@ -45,6 +61,8 @@ String getUserHome() {
     h = Platform.environment['HOME'];
   } else if (Platform.isWindows) {
     h = Platform.environment['UserProfile'];
+  } else if (Platform.isAndroid) {
+    h = getAndroidHomeDir();
   } else {
     h = 'não suportado';
   }
@@ -54,7 +72,12 @@ String getUserHome() {
 }
 
 String getUserDownloads() {
-  String d = getUserHome() + Platform.pathSeparator + 'Downloads';
+  String d;
+  if (Platform.isAndroid) {
+    d = getUserHome() + Platform.pathSeparator + 'Download';
+  } else {
+    d = getUserHome() + Platform.pathSeparator + 'Downloads';
+  }
   return d;
 }
 
@@ -67,11 +90,6 @@ String getTempDir() {
 void createDir(String dir) {
   Directory d = Directory(dir);
   d.create();
-}
-
-// Concatena dois diretórios e retorna o conteúdo concatenado em string.
-String joinPath(String path1, String path2) {
-  return path1 + Platform.pathSeparator + path2;
 }
 
 class PathUtils {
@@ -90,35 +108,6 @@ class PathUtils {
 //========================================================================//
 // Download de arquivos.
 //========================================================================//
-Future<bool> downloadFile(String url, String filename) async {
-  printInfo('Baixando: ${url}');
-  http.Client client = new http.Client();
-  var req = await client.get(Uri.parse(url));
-  var bytes = req.bodyBytes;
-  File file = new File(filename);
-  printInfo('Salvando: $filename');
-  await file.writeAsBytes(bytes);
-  return true;
-}
-
-void __downloadFileSync(String url, String filename) {
-  File file = File(filename);
-  if (file.existsSync()) {
-    printInfo('Arquivo encontrado -> ${file.path}');
-    return;
-  }
-
-  printInfo('Baixando: ${url}');
-  http.Client client = new http.Client();
-  var req = client.get(Uri.parse(url));
-
-  Response r;
-  req.then((value) {
-    printInfo('Salvando: $filename');
-    r = value;
-    file.writeAsBytes(r.bodyBytes);
-  });
-}
 
 void downloadFileSync(String url, String filename) {
   // https://stackoverflow.com/questions/18033151/using-dart-to-download-a-file
@@ -177,12 +166,12 @@ void unzipFile(String filezip, String outputdir) {
 class JsonUtils {
   JsonUtils();
 
-  String getJson({required Map<String, dynamic> map}) {
-    //return jsonEncode(map);
+  String mapToJson({required Map<String, dynamic> map}) {
+    //Converte um mapa em JSON/String.
     return JsonEncoder.withIndent("  ").convert(map);
   }
 
-  Map<String, dynamic> getMap({required String dataJson}) {
+  Map<String, dynamic> jsonToMap({required String dataJson}) {
     return jsonDecode(dataJson);
   }
 
@@ -199,7 +188,7 @@ class JsonUtils {
     }
 
     printInfo('Exportando arquivo: ${outputFile.path}');
-    outputFile.writeAsStringSync(this.getJson(map: map));
+    outputFile.writeAsStringSync(this.mapToJson(map: map));
     return true;
   }
 }

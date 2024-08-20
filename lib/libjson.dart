@@ -21,57 +21,73 @@ uriPropPosterior
 urlInteiroTeor
 ultimoStatus
 
+
+VERSÃO = 2024-08-17
+
+*/
+
+/*
+Autor - Bruno Chaves
+2024-08
 */
 
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'package:libjson/models.dart';
 import 'package:libjson/utils.dart';
 import 'package:http/http.dart';
 import 'package:http/http.dart' as http;
 
 //========================================================================//
-// Classe para obter URLs
+// Classe para obter URLs da API
 //========================================================================//
-class BaseUrls {
-  String urlProposicoes() {
+class UrlsCamara {
+  String ementas() {
     return 'https://dadosabertos.camara.leg.br/arquivos/proposicoes/json/proposicoes-2024.json';
   }
 
-  String urlTemas() {
+  String temas() {
     return 'https://dadosabertos.camara.leg.br/arquivos/proposicoesTemas/json/proposicoesTemas-2024.json';
   }
 
-  String urlAutoresProposicoes() {
+  String autores() {
     return 'https://dadosabertos.camara.leg.br/arquivos/proposicoesAutores/json/proposicoesAutores-2024.json';
   }
 }
 
 //========================================================================//
-// Ao instânciar essa classe você pode obter um Map<> de um conteúdo JSON
-// a fonte pode ser um ARQUIVO local ou um URL.
-//========================================================================//
-class JsonToMap {
-  Future<Map<String, dynamic>> fromUrl(String url) async {
-    // Recebe um url de arquivo JSON, baixa o conteúdo e retorna em forma de mapa.
-    Map<String, dynamic> m = {};
 
-    try {
-      Future<Response> response = getRequest(url);
-      Response r = await response;
-      m = jsonDecode(utf8.decode(r.bodyBytes));
-    } catch (e) {
-      printLine();
-      printErro(e.toString());
-      printInfo('Verifique o URL ou sua conexção com a internet.');
-      printLine();
-    }
-    return m;
+class GetJson {
+
+  String getOnlineJson(String url){
+    print('REQUEST: ${url}');
+    String e = '{}';
+    http.get(Uri.parse(url)).then((response) {
+      
+      if (response.statusCode == 200) {
+        // Convertendo o corpo da resposta para String
+        e = response.body;
+      } else {
+        print('Erro na requisição: ${response.statusCode}');
+      }
+    }).catchError((error) {
+      print('Erro na requisição: $error');
+    });
+
+    return e;
+  }
+
+  Map<String, dynamic> fromUrl(String url) {
+    // Recebe um url de arquivo JSON, baixa o conteúdo e retorna em forma de mapa.
+    String dataJson = this.getOnlineJson(url);
+    var _map = jsonDecode(dataJson);
+    return _map as Map<String, dynamic>;
   }
 
   Map<String, dynamic> fromFileName(String filename) {
-    // Recebe o caminho completo de um arquivo JSON no disco e retorna o conteúdo
-    // em forma de mapa.
+    // Recebe o caminho completo de um arquivo JSON no disco 
+    //e retorna o conteúdo em forma de mapa.
     Map<String, dynamic> m = {};
     File f = File(filename);
     if (f.existsSync() == false) {
@@ -79,243 +95,153 @@ class JsonToMap {
       printErro('o arquivo não existe ${filename}');
     } else {
       printInfo('Lendo o arquivo: ${filename}');
-      String content = f.readAsStringSync();
-      m = jsonDecode(content);
+      m = jsonDecode(f.readAsStringSync());
     }
     return m;
   }
 }
 
 //========================================================================//
-// Dados Gerais
-//========================================================================//
-class CamaraJsonUtil {
-  List<Map<String, dynamic>> _listMap = [];
-  File fileNameJson;
-  String keyDados = 'dados';
 
-  CamaraJsonUtil({required this.fileNameJson, required this.keyDados});
+class DadosCamara {
+  Map<String, dynamic> dadosCamara;
 
-  List<dynamic> getList() {
-    // Retorna uma lista bruta com os dados do arquivo.
-    return JsonToMap().fromFileName(this.fileNameJson.path)[this.keyDados];
+  DadosCamara({required this.dadosCamara});
+
+  List<dynamic> getList(){
+    List<dynamic> d = [];
+
+    if(!this.dadosCamara.isEmpty){
+      d = this.dadosCamara['dados'];
+    }
+    return d;
   }
 
-  List<Map<String, dynamic>> getListMap() {
-    // Retorna uma lista com mapas dos valores do arquivo.
-    if (this._listMap.isEmpty) {
-      Map<String, dynamic> _current;
-      List<dynamic> get_list = this.getList();
-      int max = get_list.length;
+  List<Map<String, dynamic>> getListMap(){
+    
+    List<dynamic> l = this.getList();
+    if(l.isEmpty){
+      return [];
+    }
 
-      for (int i = 0; i < max; i++) {
-        _current = get_list[i];
-        this._listMap.add(_current);
+    List<Map<String, dynamic>> listMap = [];
+    Map<String, dynamic> currentMap;
+    int maxNum = l.length;
+    for(int i=0; i<maxNum; i++){
+      currentMap = l[i];
+      listMap.add(currentMap);
+    }
+
+    return listMap;
+  }
+
+  List<String> getCamaraKeys(){
+
+    List<Map<String, dynamic>> m = this.getListMap();
+    if(m.isEmpty){
+      return [];
+    }
+
+    return m[0].keys.toList();
+  }
+
+}
+
+//========================================================================//
+
+class DadosEmenta {
+
+  DadosCamara dados;
+  List<Ementa> ementas = [];
+
+  DadosEmenta({required this.dados}){
+
+    List<Map<String, dynamic>> m = this.dados.getListMap();
+    int max = m.length;
+    if(this.ementas.isEmpty){
+      for(int i=0; i<max; i++){
+        this.ementas.add(Ementa(ementaItens: m[i]));
       }
     }
-    return this._listMap;
   }
 
-  List<String> getKeys() {
-    // Retorna uma lista de chaves dos mapas.
-    return this.getListMap()[0].keys.toList();
-  }
-
-  List<String> valuesInKey(String keyName) {
-    // Apartir de uma chave/key - retorna todos os valores correspondentes no arquivo JSON.
-
-    List<String> _values = [];
-    String _current;
-    int max = this.getListMap().length;
-
-    for (int i = 0; i < max; i++) {
-      _current = this.getListMap()[i][keyName].toString();
-      _values.add(_current);
+  List<String> getIds(){
+    List<String> ids = [];
+    int max = this.ementas.length;
+    for(int i=0; i<max; i++){
+      ids.add(this.ementas[i].getId());
     }
 
-    return _values;
-  }
-}
-
-class GetDados {
-  List<Map<String, dynamic>> _listMap = [];
-  File filePath;
-  late CamaraJsonUtil camaraJsonUtil;
-
-  GetDados(this.filePath) {
-    // Criar o objeto para análise e obtenção dos dados apartir de um arquivo JSON qualquer.
-    this.camaraJsonUtil =
-        CamaraJsonUtil(fileNameJson: this.filePath, keyDados: 'dados');
+    return ids;
   }
 
-  List<dynamic> getList() {
-    return this.camaraJsonUtil.getList();
-  }
-
-  List<Map<String, dynamic>> getListMap() {
-    return this.camaraJsonUtil.getListMap();
-  }
-
-  List<String> getKeys() {
-    return this.camaraJsonUtil.getKeys();
-  }
-
-  List<String> valuesInKey(String keyName) {
-    // Apartir de uma chave/key - retorna todos os valores correspondentes no arquivo JSON.
-    return this.camaraJsonUtil.valuesInKey(keyName);
-  }
-
-  FindItens getFind() {
-    return FindItens(listItens: this.getListMap());
-  }
 }
 
 //========================================================================//
-// Dados Proposições
-//========================================================================//
-class Proposicoes extends GetDados {
-  Proposicoes(super.filePath);
-}
 
-//========================================================================//
-// Proposições autores
-//========================================================================//
-class ProposicoesAutores extends GetDados {
-  ProposicoesAutores(super.filePath);
-}
+class DadosAutor {
 
-//========================================================================//
-// Buscar Itens em uma lista de mapas/json
-//========================================================================//
+  DadosCamara dados;
+  List<Autor> autores = [];
 
-class FindItens {
-  late List<Map<String, dynamic>> listItens;
+  DadosAutor({required this.dados}){
 
-  FindItens({required this.listItens});
-
-  bool containsValue({required String key, required String value}) {
-    // Verifica se um valor existe em uma chave especifica.
-    if (!this.listItens[0].containsKey(key)) {
-      return false;
-    }
-
-    bool _contains = false;
-    int max = this.listItens.length;
-    for (int i = 0; i < max; i++) {
-      if (this.listItens[i][key].toString().contains(value)) {
-        _contains = true;
-        break;
+    List<Map<String, dynamic>> m = this.dados.getListMap();
+    int max = m.length;
+    if(this.autores.isEmpty){
+      for(int i=0; i<max; i++){
+        this.autores.add(Autor(autorItens: m[i]));
       }
     }
-    return _contains;
+  } // Construtor.
+
+  List<String> getNomes(){
+    List<String> nomes = [];
+    int max = this.autores.length;
+    for(int i=0; i<max; i++){
+      nomes.add(this.autores[i].getNome());
+    }
+
+    return nomes;
   }
 
-  List<String> getValuesInKey({required key}) {
-    // Retorna os valores dos mapas na chave <key>
-    List<String> _itens = [];
-    int max = this.listItens.length;
-    for (int i = 0; i < max; i++) {
-      _itens.add(this.listItens[i][key].toString());
-    }
-
-    return _itens;
-  }
-
-  FindItens getMapsInKey({required String key, required String value}) {
-    // Retorna um objeto FindItens com todos os mapas que contém o valor <value>
-    // na chave <key>.
-    List<Map<String, dynamic>> list_maps_from_key = [];
-    if (this.listItens.isEmpty) {
-      return FindItens(listItens: []);
-    }
-
-    if (!this.listItens[0].keys.toList().contains(key)) {
-      return FindItens(listItens: []);
-    }
-
-    int max_num = this.listItens.length;
-    for (int i = 0; i < max_num; i++) {
-      if (this.listItens[i][key].toString().toUpperCase() ==
-          value.toUpperCase()) {
-        list_maps_from_key.add(this.listItens[i]);
-      }
-    }
-    return FindItens(listItens: list_maps_from_key);
-  }
-
-  FindItens getMapsFromValues({required List<String> values, required key}) {
-    // Recebe uma lista de valores, se tais valores forem encontrados, será retornado
-    // uma lista de mapas com todas a ocorrênias na forma do objeto FindItens().
-    List<Map<String, dynamic>> _list = [];
-    Map<String, dynamic> current_map;
-    int max = this.listItens.length;
-    int max_values = values.length;
-
-    for (int i = 0; i < max_values; i++) {
-      for (int c = 0; c < max; c++) {
-        current_map = this.listItens[c];
-        if (current_map[key].toString() == values[i].toString()) {
-          _list.add(current_map);
-        }
+  List<Autor> autorDados({required String nome}){
+    List<Autor> a = [];
+    int max = this.autores.length;
+    for(int i=0; i<max; i++){
+      if(this.autores[i].getNome().toUpperCase() == nome.toUpperCase()){
+        a.add(this.autores[i]);
       }
     }
 
-    return FindItens(listItens: _list);
-  }
-}
-
-class FindElements extends FindItens {
-  FindElements({required super.listItens});
-}
-
-void run() async {
-  printLine();
-
-  PathUtils path_utils = PathUtils();
-  BaseUrls base_urls = BaseUrls();
-  Directory dirTeste =
-      Directory(path_utils.join([getUserDownloads(), 'TESTE-CAMARA']));
-
-  File arquivoProposicoes =
-      new File(path_utils.join([dirTeste.path, 'proposicoes.json']));
-
-  File arquivoAutores =
-      new File(path_utils.join([dirTeste.path, 'proposicoes-autores.json']));
-
-  // Baixar os arquivos.
-  downloadFileSync(base_urls.urlProposicoes(), arquivoProposicoes.path);
-  downloadFileSync(base_urls.urlAutoresProposicoes(), arquivoAutores.path);
-
-  if (!arquivoAutores.existsSync()) {
-    printErro('O arquivo não existe -> ${arquivoAutores.path}');
-    return;
-  }
-
-  if (!arquivoProposicoes.existsSync()) {
-    printErro('O arquivo não existe -> ${arquivoProposicoes.path}');
-    return;
-  }
-
-  // Usar os dados
-  FindItens autores = ProposicoesAutores(arquivoAutores).getFind();
-  FindItens proposicoes = Proposicoes(arquivoProposicoes).getFind();
-  FindElements ro = FindElements(
-      listItens:
-          autores.getMapsInKey(key: 'siglaUFAutor', value: 'RO').listItens);
-
-  File outputFile = File(path_utils.join([dirTeste.path, 'deputados-ro.json']));
-  File arquivoNomes = File(path_utils.join([dirTeste.path, 'nomes.txt']));
-  List<String> nomes = ro.getValuesInKey(key: 'nomeAutor');
-  List<String> exportNomes = [];
-  int max = nomes.length;
-  for (int i = 0; i < max; i++) {
-    if (!exportNomes.contains(nomes[i])) {
-      exportNomes.add(nomes[i]);
+    if(a.isEmpty){
+      printErro('O nome do autor informado não existe');
+      printLine();
+      exit(1);
     }
+
+    return a;
   }
 
-  exportFile(file: arquivoNomes, textList: exportNomes, replace: true);
+  List<String> autorProposicoesIds({required String nome}){
+    List<String> ids = [];
+    List<Autor> autor = this.autorDados(nome: nome);
+    int max = autor.length;
+    for(int i=0; i<max; i++){
+      ids.add(autor[i].idProposicao());
+    }
+    return ids;
+  }
 
-  print('OK');
-  return;
+}
+
+void run(){
+  downloadBaseOnline();
+
+  DadosCamara a = DadosCamara(dadosCamara: GetJson().fromFileName(baseAutores.path));
+  DadosAutor dadosAutor = DadosAutor(dados: a);
+
+  List<Autor> c = dadosAutor.autorDados(nome: 'Cristiane Lopes');
+  print(dadosAutor.autorProposicoesIds(nome: 'Cristiane Lopes'));
+
 }
