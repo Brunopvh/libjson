@@ -44,7 +44,6 @@ void printMsg(String text) {
 //========================================================================//
 
 String getAndroidHomeDir() {
-  
   Directory androidHomeDir = Directory('/storage/emulated/0');
   Directory androidHome = androidHomeDir as Directory;
   if (!androidHome.existsSync()) {
@@ -82,9 +81,21 @@ String getUserDownloads() {
 }
 
 String getTempDir() {
-  String tmpDir =
-      Directory.systemTemp.path + Platform.pathSeparator + 'tmp_dir';
-  return tmpDir;
+  Directory d = Directory.systemTemp.createTempSync();
+  if(!d.existsSync()){
+    d.createSync(recursive: true);
+  }
+
+  return d.path;
+}
+
+Directory getTemporaryDirectory(){
+  Directory d = Directory.systemTemp.createTempSync();
+  if(!d.existsSync()){
+    d.createSync(recursive: true);
+  }
+
+  return d;
 }
 
 void createDir(String dir) {
@@ -125,18 +136,16 @@ void downloadFileSync(String url, String filename) {
 }
 
 void download({required String url, required File filePath}) async {
-
   if (filePath.existsSync()) {
     printInfo('O arquivo já existe: ${filePath.path}');
     return;
   }
 
   printInfo('Baixando: ${url}');
-  Future<Response> response = http.get(Uri.parse(url)); 
-  Response resp = await response;   
+  Future<Response> response = http.get(Uri.parse(url));
+  Response resp = await response;
   printInfo('Salvando arquivo: ${filePath.path}');
   filePath.writeAsBytesSync(resp.bodyBytes);
-
 }
 
 //========================================================================//

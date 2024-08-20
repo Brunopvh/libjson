@@ -35,6 +35,9 @@ Future<bool> downloadBaseOnline() async {
   return false;
 }
 
+//========================================================================//
+// AUTOR
+//========================================================================//
 class Ementa {
   /*
   late String id;
@@ -64,13 +67,23 @@ class Ementa {
     }
   }
 
-  String getId(){
+  String getEmentaId(){
     return this.ementaItens['id'].toString();
   }
 
+  String getEmentaNome(){
+    return this.ementaItens['ementa'].toString();
+  }
+
+  String getementaDetalhada(){
+    return this.ementaItens['ementaDetalhada'].toString();
+  }
 
 }
 
+//========================================================================//
+// AUTOR
+//========================================================================//
 class Autor {
   /*
  

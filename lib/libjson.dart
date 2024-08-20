@@ -170,7 +170,7 @@ class DadosEmenta {
     List<String> ids = [];
     int max = this.ementas.length;
     for(int i=0; i<max; i++){
-      ids.add(this.ementas[i].getId());
+      ids.add(this.ementas[i].getEmentaId());
     }
 
     return ids;
@@ -178,13 +178,16 @@ class DadosEmenta {
 
   List<Ementa> getEmentas({required List<String> ids}){
     List<Ementa> ementas = [];
-    int max = ids.length;
-    int count = this.ementas.length;
+    String currentId;
+    int maxNumIds = ids.length;
+    int maxNumEmentas = this.ementas.length;
 
-    for(int i=0; i<max; i++){
-      for(int c=0; i<count; c++){
-        if(ids[i].toString() == this.ementas[c].getId()){
-          ementas.add(this.ementas[c]);
+    for(int i=0; i<maxNumIds; i++){
+      currentId = ids[i];
+      for(int count=0; count<maxNumEmentas; count++){
+        if(currentId == this.ementas[count].getEmentaId()){
+          ementas.add(this.ementas[count]);
+          break;
         }
       }
     }
@@ -257,10 +260,11 @@ void run() async {
 
   DadosCamara ementas = DadosCamara(dadosCamara: GetJson().fromFileName(baseEmentas()));
   DadosCamara autores = DadosCamara(dadosCamara: GetJson().fromFileName(baseAutores()));
+  String nome = 'Cristiane Lopes';
+  
+  DadosAutor dados_autores = DadosAutor(dados: autores);
+  DadosEmenta dados_ementa = DadosEmenta(dados: ementas);
 
-  List<String> cristianeEmentasIds = DadosAutor(dados: autores).autorProposicoesIds(nome: 'Cristiane Lopes');
-  List<Ementa> cristianeEmentas = DadosEmenta(dados: ementas).getEmentas(ids: cristianeEmentasIds);
-
-  print(cristianeEmentasIds);
+  print(dados_autores.getNomes());
 
 }
